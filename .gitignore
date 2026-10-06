@@ -1,0 +1,7 @@
+.venv/
+__pycache__/
+*.pyc
+brreg-enheter.csv
+signalpost-universe.jsonl.gz
+.DS_Store
+out/cache/

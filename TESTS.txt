@@ -1,0 +1,11 @@
+Downloading pygments (1.2MiB)
+ Downloaded pygments
+Installed 5 packages in 5ms
+........................................................................................................                                    [100%]
+=============================== warnings summary ===============================
+.venv/lib/python3.14/site-packages/mf2py/backcompat.py:50: 11 warnings
+  /Users/omarbaro/Downloads/unfire-signalpost/.venv/lib/python3.14/site-packages/mf2py/backcompat.py:50: DeprecationWarning: codecs.open() is deprecated. Use open() instead.
+    with codecs.open(file_path, "r", "utf-8") as f:
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+104 passed, 11 warnings, 5 subtests passed in 0.83s
