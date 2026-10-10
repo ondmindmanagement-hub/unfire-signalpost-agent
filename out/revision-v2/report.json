@@ -1,0 +1,44 @@
+{
+  "run_id": "reliability-v2",
+  "started_at": "2026-10-10T20:12:27.582891Z",
+  "completed_at": "2026-10-10T20:12:44.738490Z",
+  "expected_count": 100,
+  "emitted_envelopes": 100,
+  "resumed_profiles": 100,
+  "profiles_fetched_this_run": 0,
+  "modules": [
+    "registry",
+    "accounting_obligation",
+    "registry_live",
+    "financials",
+    "roles",
+    "group",
+    "locations",
+    "website"
+  ],
+  "registry": {
+    "registry_snapshot_sha256": "8483831efe73d873460e4c6765c98f46a1937a59b763c074ea32a6d2e657bc70",
+    "registry_rows_scanned": 1172258,
+    "requested": 100,
+    "selected": 100
+  },
+  "operations": {
+    "requests": 0,
+    "bytes": 0,
+    "p50_ms": null,
+    "p95_ms": null
+  },
+  "failed_profiles": [],
+  "request_totals_partial": false,
+  "validation": {
+    "passed": true,
+    "checks": {
+      "exact_expected_count": true,
+      "unique_organisation_numbers": true,
+      "all_entity_states_terminal": true,
+      "all_module_states_terminal": true,
+      "zero_silent_drops": true
+    },
+    "invalid_states": []
+  }
+}

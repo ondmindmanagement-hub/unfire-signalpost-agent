@@ -5,3 +5,6 @@ brreg-enheter.csv
 signalpost-universe.jsonl.gz
 .DS_Store
 out/cache/
+
+out/revision-v2/profiles.jsonl
+out/revision-v2/envelopes.jsonl

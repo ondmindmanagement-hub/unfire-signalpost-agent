@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from norway_company_agent.batch import profile_complete_for_modules, profiles_from_bulk, read_organisation_inputs, terminal_envelope, validate_envelopes  # noqa: E402
-from norway_company_agent.evidence import utc_now  # noqa: E402
+from norway_company_agent.evidence import utc_now, evidence  # noqa: E402
 from norway_company_agent.identity import apply_website_identity_gate  # noqa: E402
 from norway_company_agent.official import fetch_official_modules  # noqa: E402
 from norway_company_agent.website import fetch_website  # noqa: E402
@@ -24,6 +24,27 @@ def write_jsonl(path: Path, rows: list[dict]) -> None:
         for row in rows:
             handle.write(json.dumps(row, ensure_ascii=False, separators=(",", ":")) + "\n")
     temporary.replace(path)
+
+
+def recover_failed_profile(profile: dict, requested_modules: list[str], error: Exception) -> tuple[dict, dict]:
+    """Return one honest terminal envelope when an individual network task crashes.
+
+    Registry and accounting evidence remain intact; uncompleted enrichments are
+    explicitly source_error. A single flaky website or HTTP failure must not drop
+    the entire official evaluation batch.
+    """
+    message = f"Enrichment failed ({type(error).__name__}); no claim retrieved."
+    for module in requested_modules:
+        if module not in profile.get("evidence", {}):
+            profile.setdefault("evidence", {})[module] = evidence(
+                module, "source_error", "execution_failure",
+                "https://data.brreg.no", note=message,
+                source_row_key=profile["organisation_number"]
+            )
+    metric = {"requests": 0, "bytes": 0, "latencies_ms": [],
+              "partial_accounting": True}
+    profile["run_metrics"] = metric
+    return profile, metric
 
 
 def main() -> None:
@@ -72,6 +93,7 @@ def main() -> None:
         return profile, metric
 
     state: dict[str, dict] = {}
+    failed_profiles: list[dict[str, str]] = []
     resumed_profiles = 0
     profiles_output = Path(args.profiles_output)
     if args.resume and profiles_output.exists():
@@ -85,10 +107,20 @@ def main() -> None:
         }
         resumed_profiles = len(state)
     pending_profiles = [profile for profile in profiles if profile["organisation_number"] not in state]
+    pending_by_org = {p["organisation_number"]: p for p in pending_profiles}
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
         futures = {pool.submit(enrich, profile): profile["organisation_number"] for profile in pending_profiles}
         for index, future in enumerate(as_completed(futures), 1):
-            profile, metric = future.result()
+            org = futures[future]
+            try:
+                profile, metric = future.result()
+            except Exception as exc:
+                # Preserve the canonical registry identity while reporting
+                # failure to enrich. Do not fabricate a successful lookup.
+                original = pending_by_org[org]
+                profile, metric = recover_failed_profile(original, requested_modules, exc)
+                failed_profiles.append({"organisation_number": org,
+                                        "error_type": type(exc).__name__})
             state[profile["organisation_number"]] = profile
             operations["requests"] += metric["requests"]
             operations["bytes"] += metric["bytes"]
@@ -120,6 +152,8 @@ def main() -> None:
         "modules": requested_modules,
         "registry": registry_metadata,
         "operations": operations,
+        "failed_profiles": failed_profiles,
+        "request_totals_partial": bool(failed_profiles),
         "validation": validation,
     }
     Path(args.report).parent.mkdir(parents=True, exist_ok=True)
