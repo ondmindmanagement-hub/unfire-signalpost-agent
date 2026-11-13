@@ -14,6 +14,7 @@ from norway_company_agent.batch import profile_complete_for_modules, profiles_fr
 from norway_company_agent.evidence import utc_now, evidence  # noqa: E402
 from norway_company_agent.identity import apply_website_identity_gate  # noqa: E402
 from norway_company_agent.official import fetch_official_modules  # noqa: E402
+from norway_company_agent.site_signals import site_observations  # noqa: E402
 from norway_company_agent.website import fetch_website  # noqa: E402
 
 
@@ -131,6 +132,10 @@ def main() -> None:
 
     completed_at = utc_now()
     ordered_profiles = [state[org] for org in orgs]
+    # Deterministic, offline enrichment: never invent company activity or job claims.
+    # Refresh on resume too; only pages already collected by the bounded site crawl.
+    for profile in ordered_profiles:
+        profile["external_observations"] = site_observations(profile)
     envelopes = [
         terminal_envelope(profile, run_id=args.run_id, modules=requested_modules, started_at=started_at, completed_at=completed_at)
         for profile in ordered_profiles
