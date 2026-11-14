@@ -33,7 +33,7 @@ SOCIAL_HOSTS = {
 PRIORITY_TERMS = (
     "om-oss", "om_oss", "about", "kontakt", "contact", "ledelse", "management",
     "team", "people", "locations", "lokasjoner", "avdelinger", "butikker",
-    "news", "press", "aktuelt", "nyheter",
+    "news", "press", "aktuelt", "nyheter", "karriere", "career", "jobs", "ledige",
 )
 
 
@@ -228,6 +228,8 @@ def _fetch_secondary_page(url: str, *, homepage_domain: str, timeout: float, max
             "title": page_soup.title.get_text(" ", strip=True)[:500] if page_soup.title else "",
             "main_text_excerpt": page_text[:5000],
             "content_sha256": __import__("hashlib").sha256(raw).hexdigest(),
+            "identity_text_excerpt": page_soup.get_text(" ", strip=True)[:15000],
+            "structured_data": extruct.extract(page_html, base_url=final_url, syntaxes=["json-ld"]),
         }
         return page, _social_links(final_url, page_soup), 2, len(raw), elapsed, None
     except Exception as exc:
@@ -301,7 +303,7 @@ def fetch_website(url: str | None, *, timeout: float = 15.0, max_bytes: int = 2_
             "content_sha256": __import__("hashlib").sha256(raw).hexdigest(),
             "extraction_state": _extraction_state(text, soup),
         }
-        pages = [{"url": final_url, "title": title[:500], "main_text_excerpt": text[:5000], "content_sha256": value["content_sha256"]}]
+        pages = [{"url": final_url, "title": title[:500], "main_text_excerpt": text[:5000], "content_sha256": value["content_sha256"], "identity_text_excerpt": soup.get_text(" ", strip=True)[:15000], "structured_data": structured}]
         social = value["social_links"]
         crawl_errors = []
         requests = 2
